@@ -4,4 +4,4 @@ Transportation Study
 
 ## Algorithms
 ### Street network
-- Transfer network attributes
+- Copy network attributes

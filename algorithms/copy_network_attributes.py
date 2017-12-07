@@ -4,7 +4,7 @@ from qgis.core import QgsProcessing, QgsProcessingParameterFeatureSource, \
 from cuuatsalg.algorithms.base import BaseAlgorithm
 
 
-class TransferNetworkAttributes(BaseAlgorithm):
+class CopyNetworkAttributes(BaseAlgorithm):
     SOURCE = 'SRC'
     TARGET = 'TARGET'
     FIELDS = 'FIELDS'
@@ -22,10 +22,10 @@ class TransferNetworkAttributes(BaseAlgorithm):
     STRATEGY_MAX = 'STRATEGY_MAX'
 
     def name(self):
-        return 'transfernetworkattributes'
+        return 'copynetworkattributes'
 
     def displayName(self):
-        return self.tr('Transfer network attributes')
+        return self.tr('Copy network attributes')
 
     def group(self):
         return self.tr('Street network')
@@ -34,7 +34,7 @@ class TransferNetworkAttributes(BaseAlgorithm):
         tags = [
             'street',
             'network',
-            'transfer',
+            'copy',
             'attribute'
         ]
         return self.tr(','.join(tags)).split(',')
@@ -59,13 +59,13 @@ class TransferNetworkAttributes(BaseAlgorithm):
 
         self.addParameter(QgsProcessingParameterField(
             self.FIELDS,
-            self.tr('Fields to transfer'),
+            self.tr('Fields to copy'),
             parentLayerParameterName=self.SOURCE,
             allowMultiple=True))
 
         self.addParameter(QgsProcessingParameterEnum(
             self.STRATEGY,
-            self.tr('Transfer strategy'),
+            self.tr('Copy strategy'),
             options=[strategy[1] for strategy in self.strategies],
             allowMultiple=False))
 

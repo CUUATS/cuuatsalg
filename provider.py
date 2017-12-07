@@ -1,7 +1,7 @@
 import os
 from qgis.PyQt.QtGui import QIcon
 from qgis.core import QgsProcessingProvider
-from cuuatsalg.algorithms import TransferNetworkAttributes
+from cuuatsalg.algorithms import CopyNetworkAttributes
 
 plugin_path = os.path.dirname(__file__)
 
@@ -25,7 +25,7 @@ class CuuatsAlgorithmProvider(QgsProcessingProvider):
 
     def loadAlgorithms(self):
         algs = [
-            TransferNetworkAttributes()
+            CopyNetworkAttributes()
         ]
         for alg in algs:
             self.addAlgorithm(alg)
