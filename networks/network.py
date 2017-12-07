@@ -1,15 +1,16 @@
 import math
 from collections import defaultdict
-from qgis.core import QgsGeometry, QgsSpatialIndex, QgsField, QgsFeature
+from qgis.core import QgsGeometry, QgsSpatialIndex, QgsFeature, QgsPoint
 
 
 class Network(object):
 
-    def __init__(self, layer, index_nodes=True):
-        self._layer = layer
+    def __init__(self, network_id, feature_source, index_nodes=True):
+        self._id = network_id
+        self._src = feature_source
 
         self._next_edge_id = -1
-        self._edge_map = dict([(f.id(), f) for f in self._layer.getFeatures()])
+        self._edge_map = dict([(f.id(), f) for f in self._src.getFeatures()])
         self._edge_index = QgsSpatialIndex()
         self._edge_nodes = {}
 
@@ -20,7 +21,7 @@ class Network(object):
         self._build_indexes(index_nodes)
 
     def __repr__(self):
-        return '<Network %s>' % (self._layer.name(),)
+        return '<Network %s>' % (str(self._id),)
 
     def _build_indexes(self, index_nodes=True):
         next_node_id = 1
@@ -38,8 +39,7 @@ class Network(object):
                     node_id = next_node_id
                     next_node_id += 1
                     coords_node[coords] = node_id
-                    node_feature = self._make_feature(
-                        node_id, QgsGeometry(point))
+                    node_feature = self._make_node_feature(node_id, point)
                     self._node_map[node_id] = node_feature
                     if index_nodes:
                         self._node_index.insertFeature(node_feature)
@@ -53,15 +53,14 @@ class Network(object):
         self._next_edge_id = fid + 1
 
     def _has_field(self, field_name):
-        return field_name in [f.name() for f in self._layer.fields()]
+        return field_name in [f.name() for f in self._src.fields()]
 
-    def _add_fields(self, fields):
-        self._layer.dataProvider().addAttributes(
-            [QgsField(fn, ft) for (fn, ft) in fields])
-
-    def _make_feature(self, fid, geometry):
+    def _make_node_feature(self, fid, point):
         feature = QgsFeature(fid)
-        feature.setGeometry(geometry)
+        # TODO: Figure out why point.clone() does not work in the line below.
+        # (It creates weird issues with the original geometry later in
+        # the process.)
+        feature.setGeometry(QgsGeometry(QgsPoint(point.x(), point.y())))
         return feature
 
     def _vertex_id(self, eid, nid):

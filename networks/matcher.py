@@ -4,11 +4,6 @@ from cuuatsalg.networks.network import Network
 
 class NetworkMatcher(object):
 
-    @classmethod
-    def from_paths(cls, a_layer, b_layer, **kwargs):
-        return cls(Network(a_layer, index_nodes=False),
-                   Network(b_layer), **kwargs)
-
     def __init__(self, a_network, b_network, **kwargs):
         for net in [a_network, b_network]:
             assert isinstance(net, Network), \
@@ -32,6 +27,7 @@ class NetworkMatcher(object):
         self._leg_angle = kwargs.get('leg_angle', None)
         self._leg_angle_distance = kwargs.get('leg_angle_distance', 50)
         self._edge_distance = kwargs.get('edge_distance', 100)
+        self._max_edges = kwargs.get('max_edges', 20)
 
     def _networks(self):
         yield (self._a_network, self._b_network)
@@ -87,15 +83,16 @@ class NetworkMatcher(object):
                 self._ab_node_node[a_nid] = b_nid
                 self._b_node_node.add(b_nid)
 
-    def _match_nodes_to_edges(self, max_dist):
+    def _match_nodes_to_edges(self):
         for (network, other_network) in self._networks():
             for nid in network.nids():
                 node = network.get_node(nid)
-                bbox = node.geometry().boundingBox().buffered(max_dist)
+                bbox = node.geometry().boundingBox().buffered(
+                    self._edge_distance)
                 for eid in other_network.find_eids(bbox):
                     edge = other_network.get_edge(eid)
                     distance = node.geometry().distance(edge.geometry())
-                    if distance <= max_dist:
+                    if distance <= self._edge_distance:
                         node_edge = self._choose(
                             network, self._ab_node_edge, self._ba_node_edge)
                         dist = self._choose(network, self._ab_node_edge_dist,
@@ -119,7 +116,7 @@ class NetworkMatcher(object):
 
     def _find_edge_to_edge_match(self, a_end_nid, b_end_nid, a_eid, b_eid):
         for matches in self._iter_edge_matches(
-                a_end_nid, b_end_nid, [a_eid], [b_eid], [], self._segments):
+                a_end_nid, b_end_nid, [a_eid], [b_eid], [], self._max_edges):
             for (a_eid, b_eid) in matches:
                 self._ab_edge_edge[a_eid].add(b_eid)
                 self._ba_edge_edge[b_eid].add(a_eid)
@@ -190,3 +187,9 @@ class NetworkMatcher(object):
         self._match_nodes_to_nodes()
         self._match_nodes_to_edges()
         self._match_edges_to_edges()
+
+    def ab(self):
+        return self._ab_edge_edge
+
+    def ba(self):
+        return self._ba_edge_edge
