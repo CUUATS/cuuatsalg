@@ -5,9 +5,9 @@ from cuuatsalg.networks.network import Network
 class NetworkMatcher(object):
 
     @classmethod
-    def from_paths(cls, a_path, b_path, **kwargs):
-        return cls(Network(a_path, index_nodes=False),
-                   Network(b_path), **kwargs)
+    def from_paths(cls, a_layer, b_layer, **kwargs):
+        return cls(Network(a_layer, index_nodes=False),
+                   Network(b_layer), **kwargs)
 
     def __init__(self, a_network, b_network, **kwargs):
         for net in [a_network, b_network]:
@@ -28,8 +28,10 @@ class NetworkMatcher(object):
         self._ab_edge_edge = defaultdict(set)
         self._ba_edge_edge = defaultdict(set)
 
-        self._distance = kwargs.get('distance', 100)
-        self._segments = kwargs.get('segments', 20)
+        self._node_distance = kwargs.get('node_distance', 100)
+        self._leg_angle = kwargs.get('leg_angle', None)
+        self._leg_angle_distance = kwargs.get('leg_angle_distance', 50)
+        self._edge_distance = kwargs.get('edge_distance', 100)
 
     def _networks(self):
         yield (self._a_network, self._b_network)
@@ -38,20 +40,41 @@ class NetworkMatcher(object):
     def _choose(self, network, a, b):
         return a if network == self._a_network else b
 
+    def _angle_difference(self, a, b):
+        diff = abs(a - b)
+        return diff if diff <= 180 else 360 - diff
+
+    def _angle_sets_match(self, a_angles, b_angles):
+        if len(a_angles) != len(b_angles):
+            return False
+
+        matrix = [[self._angle_difference(a, b) <= self._leg_angle
+                  for b in b_angles] for a in a_angles]
+
+        return all([True in r for r in matrix]) and \
+            all([True in c for c in zip(*matrix)])
+
     def _match_nodes_to_nodes(self):
         ab = {}
         ba = {}
         a_dist = {}
         b_dist = {}
-        default_dist = self._distance + 1
+        default_dist = self._node_distance + 1
 
         for a_nid in self._a_network.nids():
             a_node = self._a_network.get_node(a_nid)
-            bbox = a_node.geometry().boundingBox().buffered(self._distance)
+            bbox = a_node.geometry().boundingBox().buffered(
+                self._node_distance)
             for b_nid in self._b_network.find_nids(bbox):
                 b_node = self._b_network.get_node(b_nid)
                 distance = a_node.geometry().distance(b_node.geometry())
-                if distance <= self._distance:
+                if distance <= self._node_distance:
+                    if self._leg_angle and \
+                            distance >= self._leg_angle_distance:
+                        a_angles = self._a_network.get_node_angles(a_nid)
+                        b_angles = self._b_network.get_node_angles(b_nid)
+                        if not self._angle_sets_match(a_angles, b_angles):
+                            continue
                     if distance < a_dist.get(a_nid, default_dist):
                         ab[a_nid] = b_nid
                         a_dist[a_nid] = distance
@@ -64,15 +87,15 @@ class NetworkMatcher(object):
                 self._ab_node_node[a_nid] = b_nid
                 self._b_node_node.add(b_nid)
 
-    def _match_nodes_to_edges(self):
+    def _match_nodes_to_edges(self, max_dist):
         for (network, other_network) in self._networks():
             for nid in network.nids():
                 node = network.get_node(nid)
-                bbox = node.geometry().boundingBox().buffered(self._distance)
+                bbox = node.geometry().boundingBox().buffered(max_dist)
                 for eid in other_network.find_eids(bbox):
                     edge = other_network.get_edge(eid)
                     distance = node.geometry().distance(edge.geometry())
-                    if distance <= self._distance:
+                    if distance <= max_dist:
                         node_edge = self._choose(
                             network, self._ab_node_edge, self._ba_node_edge)
                         dist = self._choose(network, self._ab_node_edge_dist,
@@ -105,7 +128,7 @@ class NetworkMatcher(object):
         return False
 
     def _state_endpoint_distance(self, a_nid, b_nid, a_eids, b_eids):
-        default_dist = self._distance + 1
+        default_dist = self._edge_distance + 1
         ab_dist = self._ab_node_edge_dist.get(
             (a_nid, b_eids[-1]), default_dist)
         ba_dist = self._ba_node_edge_dist.get(
@@ -133,14 +156,14 @@ class NetworkMatcher(object):
 
         state_dist = [
             (self._state_endpoint_distance(*state), state) for state in states]
-        return [s for (d, s) in sorted(state_dist) if d <= self._distance]
+        return [s for (d, s) in sorted(state_dist) if d <= self._edge_distance]
 
     def _iter_edge_matches(self, a_nid, b_nid, a_eids, b_eids, matches,
                            retries):
         matches = matches + [(a_eids[-1], b_eids[-1])]
         if self._ab_node_node.get(a_nid, None) == b_nid:
             if self._sequence_hausdorff_distance(a_eids, b_eids) <= \
-                    self._distance:
+                    self._edge_distance:
                 yield matches
         elif retries > 0:
             for (a_nid, b_nid, a_eids, b_eids) in self._get_next_states(
