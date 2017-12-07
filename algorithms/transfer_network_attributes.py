@@ -10,6 +10,7 @@ class TransferNetworkAttributes(BaseAlgorithm):
     FIELDS = 'FIELDS'
     STRATEGY = 'STRATEGY'
     NODE_MAX_DISTANCE = 'NODE_MAX_DISTANCE'
+    EDGE_MAX_DISTANCE = 'EDGE_MAX_DISTANCE'
     NODE_NEAREST_DISTANCE = 'NODE_NEAREST_DISTANCE'
     NODE_MAX_ANGLE = 'NODE_MAX_ANGLE'
     NODE_MAX_ANGLE_DISTANCE = 'NODE_MAX_ANGLE_DISTANCE'
@@ -74,6 +75,17 @@ class TransferNetworkAttributes(BaseAlgorithm):
             minValue=0))
 
         self.addParameter(QgsProcessingParameterNumber(
+            self.EDGE_MAX_DISTANCE,
+            self.tr('Maximum segment match distance'),
+            minValue=0))
+
+        self.addParameter(QgsProcessingParameterNumber(
+            self.MAX_EDGES,
+            self.tr('Maximum segments between matched intersections'),
+            minValue=1,
+            defaultValue=20))
+
+        self.addParameter(QgsProcessingParameterNumber(
             self.NODE_MAX_ANGLE,
             self.tr('Maximum intersection leg angle difference'),
             minValue=0,
@@ -85,12 +97,6 @@ class TransferNetworkAttributes(BaseAlgorithm):
             self.tr('Intersection leg angle distance threshold'),
             minValue=0,
             optional=True))
-
-        self.addParameter(QgsProcessingParameterNumber(
-            self.MAX_EDGES,
-            self.tr('Maximum segments between matched intersections'),
-            minValue=1,
-            defaultValue=20))
 
     def processAlgorithm(self, parameters, context, feedback):
         pass
