@@ -47,7 +47,7 @@ class CreateNetworkMatchTable(BaseNetworkAlgorithm):
         forward, backward, source_map = self._match(
             source, [], target, parameters, feedback)
 
-        feedback.setProgressText(self.tr('Writing matches table...'))
+        feedback.setProgressText(self.tr('Writing match table...'))
         feedback_increment = 25.0 / max(len(forward), 1)
 
         for (out_fid, (source_fid, target_fids)) in enumerate(
