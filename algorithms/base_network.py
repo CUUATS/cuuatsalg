@@ -56,7 +56,7 @@ class BaseNetworkAlgorithm(BaseAlgorithm):
 
     def initAlgorithm(self, config=None):
         self._add_layer_parameters()
-        self.add_match_option_parameters()
+        self._add_match_option_parameters()
 
     def _iter(self, iterator, feedback, start, end):
         increment = float(end - start)
