@@ -1,0 +1,20 @@
+tests:
+
+  - name: Create network match table
+    algorithm: cuuats:createnetworkmatchtable
+    params:
+      SOURCE:
+        type: vector
+        name: network_source.gml
+      TARGET:
+        type: vector
+        name: network_target.gml
+      NODE_MAX_DISTANCE: 100
+      EDGE_MAX_DISTANCE: 100
+      MAX_EDGES: 20
+      LEG_MAX_ANGLE: 10
+      LEG_MAX_ANGLE_DISTANCE: 50
+    results:
+      OUTPUT:
+        type: table
+        name: expected/network_match_table.gml
