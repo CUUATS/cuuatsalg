@@ -1,15 +1,21 @@
 import math
 from collections import defaultdict
-from qgis.core import QgsGeometry, QgsSpatialIndex, QgsFeature, QgsPoint
+from qgis.core import QgsGeometry, QgsSpatialIndex, QgsFeature, QgsPoint, \
+    QgsFeatureRequest
 
 
 class Network(object):
 
     def __init__(self, network_id, feature_source, index=True):
         self._id = network_id
-        self._src = feature_source
 
-        self._edge_map = {}
+        if isinstance(feature_source, dict):
+            self._src = None
+            self._edge_map = feature_source
+        else:
+            self._src = feature_source
+            self._edge_map = {}
+
         self._edge_index = QgsSpatialIndex()
         self._edge_nodes = {}
 
@@ -26,7 +32,11 @@ class Network(object):
     def build_indexes(self, index_nodes=True, iterate=False):
         next_node_id = 1
         coords_node = {}
-        self._edge_map = dict([(f.id(), f) for f in self._src.getFeatures()])
+        if self._src is not None:
+            request = QgsFeatureRequest()
+            request.FetchAttributes = False
+            self._edge_map = dict(
+                [(f.id(), f) for f in self._src.getFeatures(request)])
         total = len(self._edge_map)
 
         for (i, (fid, feature)) in enumerate(self._edge_map.items(), start=1):
@@ -54,9 +64,6 @@ class Network(object):
 
             if iterate:
                 yield float(i) / total
-
-    def _has_field(self, field_name):
-        return field_name in [f.name() for f in self._src.fields()]
 
     def _make_node_feature(self, fid, point):
         feature = QgsFeature(fid)

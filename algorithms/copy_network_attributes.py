@@ -129,7 +129,7 @@ class CopyNetworkAttributes(BaseAlgorithm):
             if feedback.isCanceled():
                 break
 
-    def _matches(self, source, target, parameters, feedback):
+    def _match(self, source, source_field_idxs, target, parameters, feedback):
         node_max_dist = parameters.get(self.NODE_MAX_DISTANCE, 0)
         edge_max_dist = parameters.get(self.EDGE_MAX_DISTANCE, 0)
         max_edges = parameters.get(self.MAX_EDGES, 0)
@@ -137,7 +137,12 @@ class CopyNetworkAttributes(BaseAlgorithm):
         leg_max_angle_dist = parameters.get(self.LEG_MAX_ANGLE_DISTANCE, 0)
 
         feedback.setProgressText(self.tr('Indexing networks...'))
-        a_net = Network('source', source, index=False)
+        source_request = QgsFeatureRequest().setSubsetOfAttributes(
+            source_field_idxs)
+        source_map = dict(
+            [(f.id(), f) for f in source.getFeatures(source_request)])
+
+        a_net = Network('source', source_map, index=False)
         a_build_indexes = a_net.build_indexes(index_nodes=False, iterate=True)
         self._iter(a_build_indexes, feedback, 0, 15)
 
@@ -163,7 +168,7 @@ class CopyNetworkAttributes(BaseAlgorithm):
         match_edges_edges = matcher.match_edges_to_edges(iterate=True)
         self._iter(match_edges_edges, feedback, 60, 75)
 
-        return (matcher.ab(), matcher.ba())
+        return (matcher.ab(), matcher.ba(), source_map)
 
     def _get_attributes(self, feature, idxs):
         attrs = feature.attributes()
@@ -212,11 +217,8 @@ class CopyNetworkAttributes(BaseAlgorithm):
             target.wkbType(), target.sourceCrs())
         result = {self.OUTPUT: output_id}
 
-        forward, backward = self._matches(source, target, parameters, feedback)
-        source_request = QgsFeatureRequest().setSubsetOfAttributes(
-            source_field_idxs).setFilterFids(list(forward.keys()))
-        source_map = dict(
-            [(f.id(), f) for f in source.getFeatures(source_request)])
+        forward, backward, source_map = self._match(
+            source, source_field_idxs, target, parameters, feedback)
 
         feedback.setProgressText(self.tr('Calculating attribute values...'))
         target_count = source.featureCount()
