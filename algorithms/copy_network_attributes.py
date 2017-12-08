@@ -122,15 +122,29 @@ class CopyNetworkAttributes(BaseAlgorithm):
 
         return (idxs, out_fields)
 
-    def _matches(self, source, target, parameters):
+    def _iter(self, iterator, feedback, start, end):
+        increment = float(end - start)
+        for pct in iterator:
+            feedback.setProgress(start + int(pct * increment))
+            if feedback.isCanceled():
+                break
+
+    def _matches(self, source, target, parameters, feedback):
         node_max_dist = parameters.get(self.NODE_MAX_DISTANCE, 0)
         edge_max_dist = parameters.get(self.EDGE_MAX_DISTANCE, 0)
         max_edges = parameters.get(self.MAX_EDGES, 0)
         leg_max_angle = parameters.get(self.LEG_MAX_ANGLE, 0)
         leg_max_angle_dist = parameters.get(self.LEG_MAX_ANGLE_DISTANCE, 0)
 
-        a_net = Network('source', source, index_nodes=False)
-        b_net = Network('target', target)
+        feedback.setProgressText(self.tr('Indexing networks...'))
+        a_net = Network('source', source, index=False)
+        a_build_indexes = a_net.build_indexes(index_nodes=False, iterate=True)
+        self._iter(a_build_indexes, feedback, 0, 15)
+
+        b_net = Network('target', target, index=False)
+        b_build_indexes = b_net.build_indexes(iterate=True)
+        self._iter(b_build_indexes, feedback, 15, 30)
+
         matcher = NetworkMatcher(
             a_net, b_net,
             node_distance=node_max_dist,
@@ -139,7 +153,16 @@ class CopyNetworkAttributes(BaseAlgorithm):
             leg_angle_distance=leg_max_angle_dist,
             max_edges=max_edges)
 
-        matcher.match()
+        feedback.setProgressText(self.tr('Matching networks...'))
+        match_nodes_nodes = matcher.match_nodes_to_nodes(iterate=True)
+        self._iter(match_nodes_nodes, feedback, 30, 45)
+
+        match_nodes_edges = matcher.match_nodes_to_edges(iterate=True)
+        self._iter(match_nodes_edges, feedback, 45, 60)
+
+        match_edges_edges = matcher.match_edges_to_edges(iterate=True)
+        self._iter(match_edges_edges, feedback, 60, 75)
+
         return (matcher.ab(), matcher.ba())
 
     def _get_attributes(self, feature, idxs):
@@ -187,14 +210,23 @@ class CopyNetworkAttributes(BaseAlgorithm):
         sink, output_id = self.parameterAsSink(
             parameters, self.OUTPUT, context, out_fields,
             target.wkbType(), target.sourceCrs())
+        result = {self.OUTPUT: output_id}
 
-        forward, backward = self._matches(source, target, parameters)
+        forward, backward = self._matches(source, target, parameters, feedback)
         source_request = QgsFeatureRequest().setSubsetOfAttributes(
             source_field_idxs).setFilterFids(list(forward.keys()))
         source_map = dict(
             [(f.id(), f) for f in source.getFeatures(source_request)])
 
+        feedback.setProgressText(self.tr('Calculating attribute values...'))
+        target_count = source.featureCount()
+        feedback_current = 75.0
+        feedback_increment = 25.0 / target_count if target_count else 0
+
         for target_feature in target.getFeatures():
+            if feedback.isCanceled():
+                break
+
             attributes = target_feature.attributes()
             matches = backward.get(target_feature.id(), [])
             source_features = [source_map[m] for m in matches]
@@ -233,4 +265,7 @@ class CopyNetworkAttributes(BaseAlgorithm):
             target_feature.setAttributes(attributes)
             sink.addFeature(target_feature, QgsFeatureSink.FastInsert)
 
-        return {self.OUTPUT: output_id}
+            feedback_current += feedback_increment
+            feedback.setProgress(feedback_current)
+
+        return result

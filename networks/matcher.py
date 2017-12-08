@@ -50,14 +50,15 @@ class NetworkMatcher(object):
         return all([True in r for r in matrix]) and \
             all([True in c for c in zip(*matrix)])
 
-    def _match_nodes_to_nodes(self):
+    def match_nodes_to_nodes(self, iterate=False):
         ab = {}
         ba = {}
         a_dist = {}
         b_dist = {}
         default_dist = self._node_distance + 1
+        a_node_count = len(self._a_network.nids())
 
-        for a_nid in self._a_network.nids():
+        for (i, a_nid) in enumerate(self._a_network.nids(), start=1):
             a_node = self._a_network.get_node(a_nid)
             bbox = a_node.geometry().boundingBox().buffered(
                 self._node_distance)
@@ -78,12 +79,17 @@ class NetworkMatcher(object):
                         ba[b_nid] = a_nid
                         b_dist[b_nid] = distance
 
+            if iterate:
+                yield float(i) / a_node_count
+
         for (a_nid, b_nid) in ab.items():
             if ba.get(b_nid, None) == a_nid:
                 self._ab_node_node[a_nid] = b_nid
                 self._b_node_node.add(b_nid)
 
-    def _match_nodes_to_edges(self):
+    def match_nodes_to_edges(self, iterate=False):
+        node_count = len(self._a_network.nids()) + len(self._b_network.nids())
+        node_i = 1.0
         for (network, other_network) in self._networks():
             for nid in network.nids():
                 node = network.get_node(nid)
@@ -100,8 +106,14 @@ class NetworkMatcher(object):
                         node_edge[nid].add(eid)
                         dist[(nid, eid)] = distance
 
-    def _match_edges_to_edges(self):
-        for (a_nid, b_nid) in self._ab_node_node.items():
+                if iterate:
+                    yield node_i / node_count
+                    node_i += 1.0
+
+    def match_edges_to_edges(self, iterate=False):
+        node_count = len(self._ab_node_node)
+        for (i, (a_nid, b_nid)) in enumerate(
+                self._ab_node_node.items(), start=1):
             for a_eid in self._a_network.get_node_eids(a_nid):
                 if a_eid in self._ab_edge_edge:
                     continue
@@ -113,6 +125,9 @@ class NetworkMatcher(object):
                     if self._find_edge_to_edge_match(
                             a_end_nid, b_end_nid, a_eid, b_eid):
                         break
+
+            if iterate:
+                yield float(i) / node_count
 
     def _find_edge_to_edge_match(self, a_end_nid, b_end_nid, a_eid, b_eid):
         for matches in self._iter_edge_matches(
@@ -184,9 +199,9 @@ class NetworkMatcher(object):
         return geom
 
     def match(self):
-        self._match_nodes_to_nodes()
-        self._match_nodes_to_edges()
-        self._match_edges_to_edges()
+        self.match_nodes_to_nodes()
+        self.match_nodes_to_edges()
+        self.match_edges_to_edges()
 
     def ab(self):
         return self._ab_edge_edge
