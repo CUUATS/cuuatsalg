@@ -137,8 +137,8 @@ class CopyNetworkAttributes(BaseNetworkAlgorithm):
                         attributes.append(weighted_total / total_length
                                           if total_length > 0 else None)
                 elif method == self.METHOD_LONGEST:
-                    lengths = self._get_lengths(
-                        target_feature, source_features, forward)
+                    lengths = list(self._get_lengths(
+                        target_feature, source_features, forward))
                     attributes.extend(
                         source_attrs[lengths.index(max(lengths))])
                 elif method == self.METHOD_MINIMUM:
