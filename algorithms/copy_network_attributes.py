@@ -124,8 +124,8 @@ class CopyNetworkAttributes(BaseNetworkAlgorithm):
                 if len(source_attrs) == 1:
                     attributes.extend(source_attrs[0])
                 elif method == self.METHOD_AVERAGE:
-                    lengths = self._get_lengths(
-                        target_feature, source_features, forward)
+                    lengths = list(self._get_lengths(
+                        target_feature, source_features, forward))
                     for attr_values in zip(*source_attrs):
                         weighted_total = 0
                         total_length = 0
