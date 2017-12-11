@@ -19,6 +19,29 @@ tests:
         type: table
         name: expected/network_match_table.gml
 
+  - name: Copy network attributes average
+    algorithm: cuuats:copynetworkattributes
+    params:
+      SOURCE:
+        type: vector
+        name: network_source.gml
+      TARGET:
+        type: vector
+        name: network_target.gml
+      METHOD: 0
+      FIELDS:
+        - functional_classification
+        - safety_score
+      NODE_MAX_DISTANCE: 100
+      EDGE_MAX_DISTANCE: 100
+      MAX_EDGES: 20
+      LEG_MAX_ANGLE: 10
+      LEG_MAX_ANGLE_DISTANCE: 50
+    results:
+      OUTPUT:
+        type: table
+        name: expected/network_copy_attributes_average.gml
+
   - name: Copy network attributes longest
     algorithm: cuuats:copynetworkattributes
     params:
