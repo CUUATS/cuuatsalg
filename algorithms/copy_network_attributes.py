@@ -126,7 +126,8 @@ class CopyNetworkAttributes(BaseNetworkAlgorithm):
                 elif method == self.METHOD_AVERAGE:
                     lengths = list(self._get_lengths(
                         target_feature, source_features, forward))
-                    for attr_values in zip(*source_attrs):
+                    for (attr_values, field) in zip(
+                            zip(*source_attrs), source_fields):
                         weighted_total = 0
                         total_length = 0
                         for (length, value) in zip(lengths, attr_values):
@@ -134,8 +135,11 @@ class CopyNetworkAttributes(BaseNetworkAlgorithm):
                                 continue
                             weighted_total += float(value) * length
                             total_length += length
-                        attributes.append(weighted_total / total_length
-                                          if total_length > 0 else None)
+                        avg = weighted_total / total_length \
+                            if total_length > 0 else None
+                        if field.typeName() == 'Integer' and avg is not None:
+                            avg = int(avg)
+                        attributes.append(avg)
                 elif method == self.METHOD_LONGEST:
                     lengths = list(self._get_lengths(
                         target_feature, source_features, forward))
