@@ -3,7 +3,7 @@ name=CUUATS Processing Algorithms
 description=QGIS 3 processing algorithms for the Champaign Urbana Urbanized Area Transportation Study
 category=Analysis
 version=0.1
-qgisMinimumVersion=2.99
+qgisMinimumVersion=3.0
 
 author=Matt Yoder
 email=myoder@ccrpc.org
