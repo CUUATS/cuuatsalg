@@ -15,6 +15,15 @@ class CopyNetworkAttributes(BaseNetworkAlgorithm):
     METHOD_MINIMUM = 2
     METHOD_MAXIMUM = 3
 
+    GENERAL_HELP = \
+        '''This algorithm matches segments in the source and target networks
+        for the purpose of copying attributes from the source network to the
+        target network. The output is a copy of the target network with the
+        specified 'fields to copy' from the source network added. When multiple
+        source network segments match a target network segment, the algorithm
+        determines the value of the field based on the specified 'copy method'.
+        '''.replace('\n', '')
+
     def name(self):
         return 'copynetworkattributes'
 
@@ -23,6 +32,15 @@ class CopyNetworkAttributes(BaseNetworkAlgorithm):
 
     def group(self):
         return self.tr('Street network')
+
+    def shortHelpString(self):
+        help = [
+            CopyNetworkAttributes.GENERAL_HELP,
+            BaseNetworkAlgorithm.LAYER_PARAMETER_HELP,
+            BaseNetworkAlgorithm.INTERSECTION_APPROACH_HELP,
+            BaseNetworkAlgorithm.SEGMENT_APPROACH_HELP
+        ]
+        return self.tr('\n\n'.join(help))
 
     def tags(self):
         tags = [

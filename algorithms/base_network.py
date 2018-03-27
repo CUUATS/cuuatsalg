@@ -13,6 +13,29 @@ class BaseNetworkAlgorithm(BaseAlgorithm):
     LEG_MAX_ANGLE = 'LEG_MAX_ANGLE'
     LEG_MAX_ANGLE_DISTANCE = 'LEG_MAX_ANGLE_DISTANCE'
 
+    LAYER_PARAMETER_HELP = \
+        '''The 'source network layer' and 'target network layer' parameters
+        should be fully-noded linestring layers. Currently only single-part
+        geometries are supported.
+        '''.replace('\n', '')
+    INTERSECTION_APPROACH_HELP = \
+        '''The algorithm first matches intersections that are within the
+        specified 'maximum intersection match distance' of each other.
+        Intersections that are above the 'intersection leg angle distance
+        threshold' must also have legs that are within a certain number of
+        degrees of each other, specified by the 'maximum intersection leg
+        angle difference' parameter.
+        '''.replace('\n', '')
+    SEGMENT_APPROACH_HELP = \
+        '''The algorithm then attempts to find a sequence of matching segments
+        in the source and target networks. In order to match, the distance
+        between the segments must never exceed the 'maximum segment match
+        distance', and the sequences must start and end at matched
+        intersection pairs. The algorithm will attempt to match up to the
+        'maximum segments to match between matched intersections' in each
+        network before giving up.
+        '''.replace('\n', '')
+
     def _add_layer_parameters(self):
         self.addParameter(QgsProcessingParameterFeatureSource(
             self.SOURCE,

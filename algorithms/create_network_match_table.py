@@ -7,6 +7,13 @@ from PyQt5.QtCore import QVariant
 class CreateNetworkMatchTable(BaseNetworkAlgorithm):
     OUTPUT = 'OUTPUT'
 
+    GENERAL_HELP = \
+        '''This algorithm matches segments in the source and target networks
+        and outputs a table containing the feature IDs of matched segment
+        pairs. The matching process is many-to-many, and feature IDs from both
+        networks may appear multiple times in the resulting table.
+        '''.replace('\n', '')
+
     def name(self):
         return 'createnetworkmatchtable'
 
@@ -15,6 +22,15 @@ class CreateNetworkMatchTable(BaseNetworkAlgorithm):
 
     def group(self):
         return self.tr('Street network')
+
+    def shortHelpString(self):
+        help = [
+            CreateNetworkMatchTable.GENERAL_HELP,
+            BaseNetworkAlgorithm.LAYER_PARAMETER_HELP,
+            BaseNetworkAlgorithm.INTERSECTION_APPROACH_HELP,
+            BaseNetworkAlgorithm.SEGMENT_APPROACH_HELP
+        ]
+        return self.tr('\n\n'.join(help))
 
     def tags(self):
         tags = [
