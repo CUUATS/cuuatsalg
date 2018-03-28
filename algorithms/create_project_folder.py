@@ -94,6 +94,6 @@ class CreateProjectFolder(BaseAlgorithm):
             'LAYERS': [],
             'OUTPUT': gpkg_path,
             'OVERWRITE': False,
-        })
+        }, feedback=feedback, context=context)
 
         return {self.OUTPUT: gpkg}
