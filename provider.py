@@ -1,7 +1,8 @@
 import os
 from qgis.PyQt.QtGui import QIcon
 from qgis.core import QgsProcessingProvider
-from cuuatsalg.algorithms import CopyNetworkAttributes, CreateNetworkMatchTable
+from cuuatsalg.algorithms import CopyNetworkAttributes, \
+    CreateNetworkMatchTable, CreateProjectFolder
 
 plugin_path = os.path.dirname(__file__)
 
@@ -26,7 +27,8 @@ class CuuatsAlgorithmProvider(QgsProcessingProvider):
     def loadAlgorithms(self):
         algs = [
             CopyNetworkAttributes(),
-            CreateNetworkMatchTable()
+            CreateNetworkMatchTable(),
+            CreateProjectFolder(),
         ]
         for alg in algs:
             self.addAlgorithm(alg)
