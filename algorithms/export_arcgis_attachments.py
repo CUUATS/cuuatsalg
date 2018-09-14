@@ -1,9 +1,14 @@
 # import os
 # import processing
+import mimetypes
+import os
+import re
+import unicodedata
+from PyQt5.QtCore import QVariant
 from qgis.core import QgsProcessingParameterFolderDestination, \
-    QgsProcessingParameterString, \
+    QgsProcessingParameterString, QgsFields, QgsField, QgsFeature, \
     QgsProcessingParameterField, QgsProcessingParameterFeatureSink, \
-    QgsProcessingParameterFeatureSource
+    QgsProcessingParameterFeatureSource, QgsProcessingParameterBoolean
 from cuuatsalg.algorithms.base import BaseAlgorithm
 
 
@@ -14,9 +19,10 @@ class ExportArcGISAttachments(BaseAlgorithm):
     ATTACH_ID = 'ATTACH_ID'
     ATTACH_DATA = 'ATTACH_DATA'
     FOLDER = 'FOLDER'
-    NAME = 'NAME'
+    USE_FID = 'USE_FID'
+    ID_NAME = 'ID_NAME'
+    PATH_NAME = 'PATH_NAME'
     OUTPUT = 'OUTPUT'
-    OUTPUT_ATTACH = 'OUTPUT_ATTACH'
 
     HELP = \
         ''''''.replace('\n', '')
@@ -62,43 +68,80 @@ class ExportArcGISAttachments(BaseAlgorithm):
             self.tr('Attachment layer source ID field'),
             parentLayerParameterName=self.ATTACH))
 
-        self.addParameter(QgsProcessingParameterField(
-            self.ATTACH_DATA,
-            self.tr('Attachment layer data field'),
-            parentLayerParameterName=self.ATTACH))
-
         self.addParameter(QgsProcessingParameterFolderDestination(
             self.FOLDER,
             self.tr('Attachment folder')))
 
+        self.addParameter(QgsProcessingParameterBoolean(
+            self.USE_FID,
+            self.tr('Use feature ID in results'),
+            defaultValue=True))
+
         self.addParameter(QgsProcessingParameterString(
-            self.NAME,
-            self.tr('Path field name')))
+            self.ID_NAME,
+            self.tr('ID field name'),
+            defaultValue='related_id'))
+
+        self.addParameter(QgsProcessingParameterString(
+            self.PATH_NAME,
+            self.tr('Path field name'),
+            defaultValue='path'))
 
         self.addParameter(QgsProcessingParameterFeatureSink(
             self.OUTPUT,
             self.tr('Results layer')))
-
-        self.addParameter(QgsProcessingParameterFeatureSink(
-            self.OUTPUT_ATTACH,
-            self.tr('Results attachment layer')))
 
     def processAlgorithm(self, parameters, context, feedback):
         source = self.parameterAsSource(parameters, self.SOURCE, context)
         attach = self.parameterAsSource(parameters, self.ATTACH, context)
         source_id = self.parameterAsFields(parameters, self.SOURCE_ID, context)
         attach_id = self.parameterAsFields(parameters, self.ATTACH_ID, context)
-        attach_data = self.parameterAsFields(parameters, self.ATTACH_DATA,
-                                             context)
         folder = self.parameterAsFile(parameters, self.FOLDER, context)
-        name = self.parameterAsString(parameters, self.NAME, context)
+        use_fid = self.parameterAsBoolean(parameters, self.USE_FID, context)
+        id_name = self.parameterAsString(parameters, self.ID_NAME, context)
+        path_name = self.parameterAsString(parameters, self.PATH_NAME, context)
 
-        output_sink, output_sink_id = self.parameterAsSink(
+        out_fields = QgsFields()
+        id_type = QVariant.Int
+        if not use_fid:
+            attach_fields = attach.fields()
+            id_type = attach_fields.at(attach_fields.indexOf(attach_id)).type()
+        out_fields.append(QgsField(id_name, id_type))
+        out_fields.append(QgsField(path_name, QVariant.String))
+
+        output_sink, output_id = self.parameterAsSink(
             parameters, self.OUTPUT, context, out_fields,
-            source.wkbType(), source.sourceCrs())
+            'NoGeometry', None)
 
-        attach_sink, attach_sink_id = self.parameterAsSink(
-            parameters, self.OUTPUT_ATTACH, context, out_fields,
-            source.wkbType(), source.sourceCrs())
+        if use_fid:
+            smap = dict([(f[source_id], f.id()) for f in source.getFeatures()])
 
-        return {self.OUTPUT: output_sink_id}
+        for in_feature in attach.getFeatures():
+            out_feature = QgsFeature()
+            id_value = in_feature[attach_id]
+            if use_fid:
+                id_value = smap[id_value]
+
+            mimetype = in_feature['CONTENT_TYPE']
+            count = 0
+            filename = self.make_filename(id_value, count, mimetype)
+            while os.path.exists(os.path.join(folder, filename)):
+                count += 1
+                filename = self.make_filename(id_value, count, mimetype)
+
+            # TODO: Actually create the file.
+
+            out_feature.setAttributes(
+                [id_value, os.path.join(folder, filename)])
+
+            output_sink.addFeature(out_feature)
+
+        return {self.OUTPUT: output_id}
+
+    def make_filename(self, id, count, mimetype):
+        id = unicodedata.normalize('NFKD', str(id)).encode('ascii', 'ignore')
+        id = re.sub('[^\w\s-]', '', id).strip().lower()
+        id = re.sub('[-\s]+', '-', id)
+
+        return '%s-%s%s' % (
+            id, str(count), mimetypes.guess_extension(mimetype))
