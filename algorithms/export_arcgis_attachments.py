@@ -19,6 +19,7 @@ class ExportArcGISAttachments(BaseAlgorithm):
     FOLDER = 'FOLDER'
     USE_FID = 'USE_FID'
     ID_NAME = 'ID_NAME'
+    USE_PATH = 'USE_PATH'
     PATH_NAME = 'PATH_NAME'
     OUTPUT = 'OUTPUT'
 
@@ -82,10 +83,15 @@ class ExportArcGISAttachments(BaseAlgorithm):
             self.tr('ID field name'),
             defaultValue='related_id'))
 
+        self.addParameter(QgsProcessingParameterBoolean(
+            self.USE_PATH,
+            self.tr('Use full file path in results'),
+            defaultValue=False))
+
         self.addParameter(QgsProcessingParameterString(
             self.PATH_NAME,
             self.tr('Path field name'),
-            defaultValue='path'))
+            defaultValue='filename'))
 
         self.addParameter(QgsProcessingParameterFeatureSink(
             self.OUTPUT,
@@ -101,6 +107,7 @@ class ExportArcGISAttachments(BaseAlgorithm):
         folder = self.parameterAsFile(parameters, self.FOLDER, context)
         use_fid = self.parameterAsBool(parameters, self.USE_FID, context)
         id_name = self.parameterAsString(parameters, self.ID_NAME, context)
+        use_path = self.parameterAsBool(parameters, self.USE_PATH, context)
         path_name = self.parameterAsString(parameters, self.PATH_NAME, context)
 
         out_fields = QgsFields()
@@ -132,9 +139,9 @@ class ExportArcGISAttachments(BaseAlgorithm):
                 filename = self.make_filename(id_value, count, extension)
 
             # TODO: Actually create the file.
-
+            path = os.path.join(folder, filename) if use_path else filename
             out_feature.setAttributes(
-                [id_value, os.path.join(folder, filename)])
+                [id_value, path])
 
             output_sink.addFeature(out_feature)
 
