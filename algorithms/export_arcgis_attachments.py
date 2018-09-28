@@ -8,7 +8,8 @@ from PyQt5.QtCore import QVariant
 from qgis.core import QgsProcessingParameterFolderDestination, \
     QgsProcessingParameterString, QgsFields, QgsField, QgsFeature, \
     QgsProcessingParameterField, QgsProcessingParameterFeatureSink, \
-    QgsProcessingParameterFeatureSource, QgsProcessingParameterBoolean
+    QgsProcessingParameterFeatureSource, QgsProcessingParameterBoolean, \
+    QgsProcessing, QgsWkbTypes
 from cuuatsalg.algorithms.base import BaseAlgorithm
 
 
@@ -52,11 +53,13 @@ class ExportArcGISAttachments(BaseAlgorithm):
     def initAlgorithm(self, config=None):
         self.addParameter(QgsProcessingParameterFeatureSource(
             self.SOURCE,
-            self.tr('Source layer')))
+            self.tr('Source layer'),
+            types=[QgsProcessing.TypeVector]))
 
         self.addParameter(QgsProcessingParameterFeatureSource(
             self.ATTACH,
-            self.tr('Attachment layer')))
+            self.tr('Attachment layer'),
+            types=[QgsProcessing.TypeVector]))
 
         self.addParameter(QgsProcessingParameterField(
             self.SOURCE_ID,
@@ -97,7 +100,7 @@ class ExportArcGISAttachments(BaseAlgorithm):
         source_id = self.parameterAsFields(parameters, self.SOURCE_ID, context)
         attach_id = self.parameterAsFields(parameters, self.ATTACH_ID, context)
         folder = self.parameterAsFile(parameters, self.FOLDER, context)
-        use_fid = self.parameterAsBoolean(parameters, self.USE_FID, context)
+        use_fid = self.parameterAsBool(parameters, self.USE_FID, context)
         id_name = self.parameterAsString(parameters, self.ID_NAME, context)
         path_name = self.parameterAsString(parameters, self.PATH_NAME, context)
 
@@ -111,7 +114,7 @@ class ExportArcGISAttachments(BaseAlgorithm):
 
         output_sink, output_id = self.parameterAsSink(
             parameters, self.OUTPUT, context, out_fields,
-            'NoGeometry', None)
+            QgsWkbTypes.NoGeometry)
 
         if use_fid:
             smap = dict([(f[source_id], f.id()) for f in source.getFeatures()])
