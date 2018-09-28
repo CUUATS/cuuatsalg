@@ -138,10 +138,12 @@ class ExportArcGISAttachments(BaseAlgorithm):
                 count += 1
                 filename = self.make_filename(id_value, count, extension)
 
-            # TODO: Actually create the file.
-            path = os.path.join(folder, filename) if use_path else filename
+            path = os.path.join(folder, filename)
+            with open(path, 'wb') as out_file:
+                out_file.write(in_feature['DATA'])
+
             out_feature.setAttributes(
-                [id_value, path])
+                [id_value, path if use_path else filename])
 
             output_sink.addFeature(out_feature)
 
