@@ -97,8 +97,10 @@ class ExportArcGISAttachments(BaseAlgorithm):
     def processAlgorithm(self, parameters, context, feedback):
         source = self.parameterAsSource(parameters, self.SOURCE, context)
         attach = self.parameterAsSource(parameters, self.ATTACH, context)
-        source_id = self.parameterAsFields(parameters, self.SOURCE_ID, context)
-        attach_id = self.parameterAsFields(parameters, self.ATTACH_ID, context)
+        source_id = self.parameterAsFields(
+            parameters, self.SOURCE_ID, context)[0]
+        attach_id = self.parameterAsFields(
+            parameters, self.ATTACH_ID, context)[0]
         folder = self.parameterAsFile(parameters, self.FOLDER, context)
         use_fid = self.parameterAsBool(parameters, self.USE_FID, context)
         id_name = self.parameterAsString(parameters, self.ID_NAME, context)
