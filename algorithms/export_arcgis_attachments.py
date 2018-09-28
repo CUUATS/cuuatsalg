@@ -132,7 +132,7 @@ class ExportArcGISAttachments(BaseAlgorithm):
                 id_value = smap[id_value]
 
             extension = in_feature['ATT_NAME'].rsplit('.', 1)[-1]
-            count = 0
+            count = 1
             filename = self.make_filename(id_value, count, extension)
             while os.path.exists(os.path.join(folder, filename)):
                 count += 1
