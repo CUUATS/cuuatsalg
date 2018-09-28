@@ -1,6 +1,3 @@
-# import os
-# import processing
-import mimetypes
 import os
 import re
 import unicodedata
@@ -127,12 +124,12 @@ class ExportArcGISAttachments(BaseAlgorithm):
             if use_fid:
                 id_value = smap[id_value]
 
-            mimetype = in_feature['CONTENT_TYPE']
+            extension = in_feature['ATT_NAME'].rsplit('.', 1)[-1]
             count = 0
-            filename = self.make_filename(id_value, count, mimetype)
+            filename = self.make_filename(id_value, count, extension)
             while os.path.exists(os.path.join(folder, filename)):
                 count += 1
-                filename = self.make_filename(id_value, count, mimetype)
+                filename = self.make_filename(id_value, count, extension)
 
             # TODO: Actually create the file.
 
@@ -143,10 +140,10 @@ class ExportArcGISAttachments(BaseAlgorithm):
 
         return {self.OUTPUT: output_id}
 
-    def make_filename(self, id, count, mimetype):
-        id = unicodedata.normalize('NFKD', str(id)).encode('ascii', 'ignore')
+    def make_filename(self, id, count, extension):
+        id = unicodedata.normalize('NFKD', str(id)).encode(
+            'ascii', 'ignore').decode('utf-8')
         id = re.sub('[^\w\s-]', '', id).strip().lower()
         id = re.sub('[-\s]+', '-', id)
 
-        return '%s-%s%s' % (
-            id, str(count), mimetypes.guess_extension(mimetype))
+        return '%s-%s.%s' % (id, str(count), extension)
